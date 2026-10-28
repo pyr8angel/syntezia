@@ -1,0 +1,2 @@
+# syntezia
+music visualization software
