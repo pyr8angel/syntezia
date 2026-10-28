@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Syntezia Data — Lab</title>
+<style>
+:root{--bg:#e4e8e6;--fg:#252b2a;--mut:#7b8581;--card:#edf0ee;--line:#c5cdca;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#e4e8e6;--fg:#252b2a;--mut:#7b8581;--card:#edf0ee;--line:#c5cdca}}
+:root[data-theme="dark"]{--bg:#0e0d14;--fg:#ece9f7;--mut:#9a96b3;--card:#17151f;--line:#2a2736}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,sans-serif} ::selection{background:#ff2c8b;color:#fff}
+.app{max-width:1100px;margin:0 auto;padding:12px;display:grid;gap:12px;grid-template-columns:1fr}
+@media(min-width:820px){.app{grid-template-columns:minmax(0,1fr) 320px;align-items:start}}
+h1{font:600 18px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.2em;margin:0 0 4px}
+.sub{color:var(--mut);font-size:13px;margin:0 0 12px}
+#fs{display:flex;justify-content:center;--h:78vh}
+#fs:fullscreen{--h:100vh;background:#000;align-items:center}
+#stage{position:relative;aspect-ratio:9/16;width:min(100%,calc(var(--h) * .5625));background:#e4e8e6;border-radius:10px;overflow:hidden}
+#fs:fullscreen #stage{border-radius:0}
+#c{position:absolute;inset:0;width:100%;height:100%}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:10px}
+label{display:grid;gap:3px;font-size:12px;color:var(--mut)}
+input,select,button{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 9px}
+input[type=color]{padding:2px;height:34px}input[type=range]{padding:0}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1;min-width:0}
+button{cursor:pointer}button:hover{border-color:var(--mut)}
+.hint{font-size:12px;color:var(--mut);margin:0}
+/* Glossy Lab tempo control */
+.bpm-control,.key-control{display:grid;gap:9px;padding:12px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(145deg,rgba(255,255,255,.72),rgba(207,216,212,.5));box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 3px 9px rgba(39,51,46,.07)}
+.bpm-head,.key-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.control-eyebrow{font:700 10px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.13em;color:var(--mut);text-transform:uppercase}
+.bpm-head output,.key-head output{font:800 17px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.02em;color:#d91e78;text-shadow:0 1px 0 rgba(255,255,255,.9)}
+.bpm-slider{width:100%;height:24px;appearance:none;-webkit-appearance:none;border:1px solid #97a29d!important;border-radius:999px!important;padding:0!important;background:linear-gradient(180deg,#8d9993 0%,#b8c1bc 19%,#edf1ee 49%,#a0aca6 53%,#e3e9e5 100%)!important;box-shadow:inset 0 2px 4px rgba(25,36,31,.28),0 2px 0 rgba(255,255,255,.9),0 4px 7px rgba(33,44,39,.1);cursor:pointer;outline:none}
+.bpm-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:31px;height:31px;border:2px solid #fff;border-radius:50%;background:linear-gradient(155deg,#ffb4d7 0%,#ff5ca8 27%,#ff2c8b 54%,#c41463 100%);box-shadow:inset 0 2px 2px rgba(255,255,255,.85),inset 0 -3px 4px rgba(105,0,45,.28),0 2px 4px rgba(36,35,34,.3),0 0 0 2px rgba(255,44,139,.16)}
+.bpm-slider::-moz-range-thumb{width:27px;height:27px;border:2px solid #fff;border-radius:50%;background:linear-gradient(155deg,#ffb4d7 0%,#ff5ca8 27%,#ff2c8b 54%,#c41463 100%);box-shadow:inset 0 2px 2px rgba(255,255,255,.85),inset 0 -3px 4px rgba(105,0,45,.28),0 2px 4px rgba(36,35,34,.3),0 0 0 2px rgba(255,44,139,.16)}
+.bpm-scale{display:flex;justify-content:space-between;color:var(--mut);font:10px ui-monospace,Menlo,Consolas,monospace;margin-top:-4px}
+.bpm-manual{grid-template-columns:1fr auto;align-items:center;gap:8px;font-size:11px!important}
+.bpm-manual input{width:88px;box-sizing:border-box;font-weight:750;text-align:center;border-radius:10px;background:linear-gradient(180deg,#fff,#e9eeeb);box-shadow:inset 0 1px 0 white,0 2px 3px rgba(32,45,39,.08)}
+.key-control{gap:10px}
+.key-head>div{display:grid;gap:2px}.key-head .key-sub{font-size:12px;color:var(--mut)}
+.piano-picker{height:94px;position:relative;overflow:hidden;border:1px solid #aab5af;border-radius:13px;background:linear-gradient(180deg,#f5f7f5 0%,#dbe2de 100%);box-shadow:inset 0 2px 5px rgba(49,62,55,.16),inset 0 1px 0 rgba(255,255,255,.95),0 3px 5px rgba(40,49,44,.06)}
+.piano-picker:before{content:"";position:absolute;inset:7px 5px 7px;border-radius:8px;border:1px solid rgba(116,130,122,.18);pointer-events:none}
+.note-dot{position:absolute;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;padding:0;border-radius:50%;font:800 11px ui-monospace,Menlo,Consolas,monospace;transition:transform .12s ease,box-shadow .12s ease,filter .12s ease;outline:none;z-index:1}
+.note-dot:hover{filter:brightness(1.06);transform:translateX(-50%) scale(1.07)}
+.note-dot.white-note{top:48px;width:35px;height:35px;color:#36413b;border:1px solid #b3beb8;background:linear-gradient(145deg,#fff 0%,#f1f4f2 46%,#c6d0ca 100%);box-shadow:inset 0 2px 2px rgba(255,255,255,.95),inset 0 -2px 3px rgba(76,92,83,.14),0 2px 3px rgba(35,48,40,.18)}
+.note-dot.black-note{top:10px;width:31px;height:31px;color:#eef3ef;border:1px solid #0f1512;background:linear-gradient(145deg,#616c65 0%,#29322d 48%,#111713 100%);box-shadow:inset 0 2px 2px rgba(255,255,255,.3),inset 0 -3px 3px rgba(0,0,0,.35),0 3px 5px rgba(22,31,26,.3);z-index:2}
+.note-dot.selected{border-color:#ff2c8b;box-shadow:0 0 0 3px rgba(255,44,139,.19),inset 0 2px 2px rgba(255,255,255,.85),0 3px 7px rgba(37,40,37,.22);transform:translateX(-50%) scale(1.1)}
+.note-dot.black-note.selected{color:#fff;border-color:#ff86bc;background:linear-gradient(145deg,#ff77b6 0%,#ed247e 45%,#9b124e 100%);box-shadow:0 0 0 3px rgba(255,44,139,.22),inset 0 2px 2px rgba(255,255,255,.45),0 3px 6px rgba(37,40,37,.25)}
+.mode-switch{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.mode-btn{font:800 11px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.1em;border-radius:10px;padding:9px 10px;background:linear-gradient(180deg,#f9fbf9,#dce3de);border:1px solid #b7c2bb;box-shadow:inset 0 1px 0 #fff,0 2px 3px rgba(29,41,34,.08)}
+.mode-btn[aria-pressed="true"]{color:#fff;border-color:#d72179;background:linear-gradient(180deg,#ff78b7,#ff2c8b 50%,#be145f);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 3px rgba(91,0,36,.2),0 2px 5px rgba(255,44,139,.24)}
+.manual-key{grid-template-columns:1fr;gap:4px}.manual-key input{background:linear-gradient(180deg,#fff,#edf1ee);box-shadow:inset 0 1px 0 #fff,0 2px 3px rgba(32,45,39,.06)}
+@media(max-width:420px){.piano-picker{height:86px}.note-dot.white-note{top:45px;width:31px;height:31px;font-size:10px}.note-dot.black-note{top:10px;width:28px;height:28px;font-size:9px}.bpm-manual input{width:78px}}
+@media(prefers-reduced-motion:reduce){.note-dot{transition:none}}
+</style>
+</head>
+<body>
+<div class="app">
+ <div>
+  <h1>SYNTEZIA / DATA</h1>
+  <p class="sub">A modular music-analysis instrument. Square-first tiles, wide signal strips, and direct video export.</p>
+  <div id="fs"><div id="stage"><canvas id="c"></canvas></div></div>
+  <div class="panel" style="margin-top:12px">
+   <div class="row"><button id="play">Play / Pause</button><button id="full">Fullscreen</button></div>
+   <div class="row"><button id="export">Export Video</button><button id="stopExport" disabled>Stop &amp; Download</button></div>
+   <div class="row export-options">
+    <label>Export frame rate<select id="fps"><option value="30" selected>30 fps</option><option value="60">60 fps</option></select></label>
+    <p class="hint" id="exportStatus" aria-live="polite">Export creates a video file with synced audio. Keep this tab open while it records.</p>
+   </div>
+   <input id="seek" type="range" min="0" max="1000" value="0">
+  </div>
+ </div>
+ <div class="panel">
+  <label>Track (audio or video file)<input id="file" type="file" accept="audio/*,video/*"></label>
+  <label>Layout preset<select id="layout"></select></label>
+   <label>Motion intensity<select id="motion"><option value="1">Extreme</option><option value="0.65">Balanced</option><option value="0.3">Subtle</option></select></label>
+  <label>Intro orb<select id="intro"><option value="4" selected>4 seconds</option><option value="2.5">2.5 seconds</option><option value="0">Off</option></select></label>
+  <label>Title<input id="title" value="UNTITLED BEAT"></label>
+  <div class="bpm-control">
+   <div class="bpm-head"><span class="control-eyebrow">Tempo / BPM</span><output id="bpmDisplay" for="bpm bpmSlider">92 BPM</output></div>
+   <input id="bpmSlider" class="bpm-slider" type="range" min="40" max="240" step="1" value="92" aria-label="Tempo in beats per minute">
+   <div class="bpm-scale"><span>40</span><span>140</span><span>240 BPM</span></div>
+   <label class="bpm-manual" for="bpm">Manual BPM<input id="bpm" type="number" min="1" max="400" step="0.01" value="92" inputmode="decimal"></label>
+  </div>
+  <label>Downbeat offset (seconds)<input id="offset" type="number" step="0.01" value="0" inputmode="decimal"></label>
+  <div class="key-control">
+   <div class="key-head"><div><span class="control-eyebrow">Musical key</span><span class="key-sub">Choose a root note</span></div><output id="keyDisplay">D MIN</output></div>
+   <div class="piano-picker" id="pianoPicker" role="group" aria-label="Choose key root note">
+    <button type="button" class="note-dot white-note" data-note="C" style="left:7.143%" aria-label="C" aria-pressed="false" title="C">C</button>
+    <button type="button" class="note-dot black-note" data-note="C#" style="left:14.286%" aria-label="C sharp" aria-pressed="false" title="C sharp">C♯</button>
+    <button type="button" class="note-dot white-note" data-note="D" style="left:21.429%" aria-label="D" aria-pressed="false" title="D">D</button>
+    <button type="button" class="note-dot black-note" data-note="D#" style="left:28.571%" aria-label="D sharp" aria-pressed="false" title="D sharp">D♯</button>
+    <button type="button" class="note-dot white-note" data-note="E" style="left:35.714%" aria-label="E" aria-pressed="false" title="E">E</button>
+    <button type="button" class="note-dot white-note" data-note="F" style="left:50%" aria-label="F" aria-pressed="false" title="F">F</button>
+    <button type="button" class="note-dot black-note" data-note="F#" style="left:57.143%" aria-label="F sharp" aria-pressed="false" title="F sharp">F♯</button>
+    <button type="button" class="note-dot white-note" data-note="G" style="left:64.286%" aria-label="G" aria-pressed="false" title="G">G</button>
+    <button type="button" class="note-dot black-note" data-note="G#" style="left:71.429%" aria-label="G sharp" aria-pressed="false" title="G sharp">G♯</button>
+    <button type="button" class="note-dot white-note" data-note="A" style="left:78.571%" aria-label="A" aria-pressed="false" title="A">A</button>
+    <button type="button" class="note-dot black-note" data-note="A#" style="left:85.714%" aria-label="A sharp" aria-pressed="false" title="A sharp">A♯</button>
+    <button type="button" class="note-dot white-note" data-note="B" style="left:92.857%" aria-label="B" aria-pressed="false" title="B">B</button>
+   </div>
+   <div class="mode-switch" role="group" aria-label="Key mode">
+    <button type="button" class="mode-btn" data-mode="MAJ" aria-pressed="false">MAJOR</button>
+    <button type="button" class="mode-btn" data-mode="MIN" aria-pressed="true">MINOR</button>
+   </div>
+   <label class="manual-key" for="key">Manual key label<input id="key" value="D MIN" autocomplete="off" spellcheck="false" aria-describedby="keyHelp"></label>
+   <p class="hint" id="keyHelp">Tap a note circle and choose Major or Minor. You can still type a key label directly.</p>
+  </div>
+  <div class="row">
+   <label>Accent<input id="acc" type="color" value="#ff2c8b"></label>
+  </div>
+  <p class="hint">BPM and key are user-entered estimates. Beat and bar position assume 4/4, with the first downbeat at the offset time. Audio-reactive modules analyze the loaded signal; key and section names are not automatically detected.</p>
+ </div>
+</div>
+<audio id="a" playsinline></audio>
+<script>
+/* ===== SYNTEZIA DATA v0.1 =====
+   Sections (split into files later): THEME / AUDIO / MODULES / LAYOUTS / ENGINE
+   A module = { title, draw(g,r,S), read(S)->[[label,value],...], bare?, reset? }
+   MIDI later = register new modules with the same shape (Modules.roll = {...}). */
+const $=id=>document.getElementById(id);
+const Theme={acc:'#ff2c8b',lime:'#d7f52f',ink:'#4d5753',line:'rgba(77,87,83,.22)',bg:'#e4e8e6',font:'ui-monospace,"SF Mono",Menlo,Consolas,monospace'};
+const fmt=t=>{t=Math.max(0,t||0);return Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0')};
+const dB=x=>(20*Math.log10(Math.max(x,1e-4))).toFixed(1);
+const hz=f=>f>=1000?(f/1000).toFixed(1)+' kHz':Math.round(f)+' Hz';
+const clamp01=v=>Math.max(0,Math.min(1,Number.isFinite(v)?v:0));
+// Distinct Lab colors: bass = pink, mids = blue, highs = acid lime.
+const RhythmColors={low:'#ff2c8b',mid:'#438cff',high:'#d7f52f'};
+function colorRGB(hex){const v=parseInt(hex.slice(1),16);return [(v>>16)&255,(v>>8)&255,v&255]}
+function blendRhythmColors(weights){
+ const keys=['low','mid','high'],sum=keys.reduce((n,k)=>n+(weights[k]||0),0);
+ if(sum<=1e-5)return '#7b8581';
+ const rgb=[0,0,0];keys.forEach(k=>{const w=(weights[k]||0)/sum,c=colorRGB(RhythmColors[k]);for(let i=0;i<3;i++)rgb[i]+=c[i]*w});
+ return 'rgb('+rgb.map(v=>Math.round(v)).join(',')+')';
+}
+function txt(g,s,x,y,size,align,alpha,weight){g.font=(weight||500)+' '+size+'px '+Theme.font;g.textAlign=align||'left';g.globalAlpha=alpha==null?1:alpha;g.fillText(s,x,y)}
+
+/* ---- AUDIO ---- */
+const Audio={ac:null,an:null,fd:null,td:null,ready:false,e:[1],B:new Array(64).fill(0),
+ level:0,peak:0,rms:0,tp:0,seed:0,pulse:0,avg:0,last:0,low:0,mid:0,high:0,energy:0,hz:0,Pk:null,split:null,anL:null,anR:null,fdL:null,fdR:null,tdL:null,tdR:null,stereo:0,phase:0,recordDest:null,
+ bandPeak:{low:.12,mid:.08,high:.05},bandNorm:{low:0,mid:0,high:0},
+ init(el){if(this.ready)return;try{
+  this.ac=new(window.AudioContext||window.webkitAudioContext)();
+  const s=this.ac.createMediaElementSource(el);this.an=this.ac.createAnalyser();
+  this.an.fftSize=2048;this.an.smoothingTimeConstant=.5;s.connect(this.an);this.an.connect(this.ac.destination);
+  // A second output carries the same analyzed audio into the export stream.
+  this.recordDest=this.ac.createMediaStreamDestination();this.an.connect(this.recordDest);
+  this.split=this.ac.createChannelSplitter(2);this.anL=this.ac.createAnalyser();this.anR=this.ac.createAnalyser();this.anL.fftSize=this.anR.fftSize=1024;this.anL.smoothingTimeConstant=this.anR.smoothingTimeConstant=.35;s.connect(this.split);this.split.connect(this.anL,0);this.split.connect(this.anR,1);
+  this.fdL=new Uint8Array(this.anL.frequencyBinCount);this.fdR=new Uint8Array(this.anR.frequencyBinCount);this.tdL=new Uint8Array(this.anL.fftSize);this.tdR=new Uint8Array(this.anR.fftSize);
+  this.fd=new Uint8Array(this.an.frequencyBinCount);this.td=new Uint8Array(this.an.fftSize);
+  for(let i=1;i<=64;i++)this.e.push(Math.max(this.e[i-1]+1,Math.round(Math.pow(900,i/64))));
+  this.ready=true}catch(x){}},
+ async decode(f){this.Pk=null;this.seed=0;this.bandPeak={low:.12,mid:.08,high:.05};this.bandNorm={low:0,mid:0,high:0};let ab=null;try{ab=await f.arrayBuffer();let h=2166136261>>>0;const u=new Uint8Array(ab),stp=Math.max(1,Math.floor(u.length/2e6));for(let i=0;i<u.length;i+=stp){h^=u[i];h=Math.imul(h,16777619)>>>0}h^=u.length;h=Math.imul(h,16777619)>>>0;this.seed=h>>>0}catch(x){}try{const b=await this.ac.decodeAudioData(ab.slice(0)),c0=b.getChannelData(0),c1=b.numberOfChannels>1?b.getChannelData(1):c0,d=c0.map((v,i)=>(v+c1[i])/2),N=260,st=Math.floor(d.length/N),p=[],r=[];
+  for(let i=0;i<N;i++){let m=0,s=0;for(let j=0;j<st;j++){const v=Math.abs(d[i*st+j]);if(v>m)m=v;s+=v*v}p.push(m);r.push(Math.sqrt(s/st))}
+  const mx=Math.max(...p)||1;const mr=Math.max(...r)||1;this.Pk={p:p.map(v=>v/mx),r:r.map(v=>v/mx),e:r.map(v=>v/mr)}}catch(x){}},
+ update(on){const B=this.B;
+  if(this.ready&&on){this.an.getByteFrequencyData(this.fd);this.an.getByteTimeDomainData(this.td);
+    if(this.anL&&this.anR){this.anL.getByteFrequencyData(this.fdL);this.anR.getByteFrequencyData(this.fdR);this.anL.getByteTimeDomainData(this.tdL);this.anR.getByteTimeDomainData(this.tdR);let diff=0,total=0,cross=0,ll=0,rs=0;for(let i=0;i<this.tdL.length;i++){const l=(this.tdL[i]-128)/128,rr=(this.tdR[i]-128)/128;diff+=Math.abs(l-rr);total+=Math.abs(l)+Math.abs(rr);cross+=l*rr;ll+=l*l;rs+=rr*rr}this.stereo=Math.min(1,diff/(total+1e-6));this.phase=cross/(Math.sqrt(ll*rs)||1);}
+   for(let i=0;i<64;i++){const a=this.e[i],b=this.e[i+1];let s=0;for(let k=a;k<b;k++)s+=this.fd[k];B[i]=Math.max(s/(b-a)/255,B[i]*.85)}
+   let pi=1;for(let k=2;k<900;k++)if(this.fd[k]>this.fd[pi])pi=k;this.hz=pi*this.ac.sampleRate/2048;
+   let sq=0,pk=0;for(let i=0;i<this.td.length;i++){const x=(this.td[i]-128)/128;sq+=x*x;if(Math.abs(x)>pk)pk=Math.abs(x)}this.rms=Math.sqrt(sq/this.td.length);this.tp=Math.max(pk,this.tp*.97);
+   this.level=Math.max(Math.sqrt(sq/this.td.length),this.level*.85);
+   const m=(a,b)=>B.slice(a,b).reduce((x,y)=>x+y,0)/(b-a);
+   this.low=m(0,22);this.mid=m(22,44);this.high=m(44,64);this.energy=Math.min(1,m(0,64)*2.4);
+   const normBand=(v,k,floor)=>{const peak=Math.max(floor,this.bandPeak[k]||floor);this.bandPeak[k]=Math.max(v,peak*.9992);return clamp01(v/Math.max(floor,this.bandPeak[k]));};
+   this.bandNorm={low:normBand(this.low,'low',.025),mid:normBand(this.mid,'mid',.018),high:normBand(this.high,'high',.012)};
+   const l=m(0,12);this.avg=this.avg*.96+l*.04;const n=performance.now();
+   if(l>this.avg*1.25&&l>.3&&n-this.last>180){this.pulse=1;this.last=n}
+  }else{for(let i=0;i<64;i++)B[i]*=.9;this.level*=.9;this.rms*=.9;this.tp*=.9;this.energy*=.9}
+  this.pulse*=.9;this.peak=Math.max(this.level,this.peak-.004)}};
+
+/* ---- MODULES ---- */
+const Modules={
+ header:{bare:1,draw(g,r,S){const fs=S.W*.029;g.fillStyle=Theme.ink;txt(g,'SYNTEZIA / DATA',r.x+S.W*.025,r.y+r.h*.62,fs,'left',.9,700);g.fillStyle=Theme.acc;txt(g,S.title.toUpperCase().slice(0,24),r.x+S.W*.025,r.y+r.h*.94,fs*.68,'left',1,700);g.fillStyle=Theme.ink;txt(g,S.bpm+' BPM  /  '+S.key.toUpperCase(),r.x+r.w-S.W*.025,r.y+r.h*.62,fs*.62,'right',.8,600)}},
+ footer:{bare:1,draw(g,r,S){const y=r.y+r.h*.48,x0=r.x+S.W*.025,x1=r.x+r.w*.65;g.strokeStyle=Theme.ink;g.globalAlpha=.35;g.lineWidth=1;g.beginPath();g.moveTo(x0,y);g.lineTo(x1,y);g.stroke();g.strokeStyle=Theme.acc;g.globalAlpha=1;g.lineWidth=2;g.beginPath();g.moveTo(x0,y);g.lineTo(x0+(x1-x0)*S.prog,y);g.stroke();g.fillStyle=Theme.ink;txt(g,fmt(S.t)+' / '+fmt(S.dur),x1+S.W*.025,y+S.W*.012,S.W*.023,'left',.9,600);g.fillStyle=Theme.acc;txt(g,'S / D',r.x+r.w-S.W*.025,y+S.W*.012,S.W*.023,'right',1,700)}},
+ orbit:{title:'ORBIT',draw(g,r,S){const cx=r.x+r.w/2,cy=r.y+r.h/2,R=Math.min(r.w,r.h)*.43,beat=(S.clk.beat%4)/4,rot=S.t*.6*+S.motion;g.fillStyle=Theme.acc;const bands=[[0,22,.35],[22,44,.58],[44,64,.82]];bands.forEach((b,bi)=>{const n=48,rad=R*(.35+bi*.27);for(let i=0;i<n;i++){const u=i/n,t=u<.5?u*2:(1-u)*2,v=clamp01(Math.pow(Audio.B[b[0]+Math.min(b[1]-b[0]-1,Math.floor(t*(b[1]-b[0])))]||0,.8)*(1.3+bi*.75)),a=u*Math.PI*2+rot*(bi%2?-.4:1),len=(2+v*R*.12)*+S.motion;g.globalAlpha=.25+v*.75;g.beginPath();g.arc(cx+Math.cos(a)*rad,cy+Math.sin(a)*rad,len*.16,0,Math.PI*2);g.fill()}});const ha=-Math.PI/2+beat*Math.PI*2;g.fillStyle=Theme.acc;for(let k=0;k<26;k++){const a1=ha-k*.045;g.globalAlpha=Math.pow(1-k/26,2)*.3;g.beginPath();g.arc(cx,cy,R,a1-.05,a1);g.arc(cx,cy,R*.2,a1,a1-.05,true);g.closePath();g.fill()}g.strokeStyle=Theme.acc;g.lineWidth=2;g.globalAlpha=1;g.beginPath();g.moveTo(cx+Math.cos(ha)*R*.2,cy+Math.sin(ha)*R*.2);g.lineTo(cx+Math.cos(ha)*R,cy+Math.sin(ha)*R);g.stroke();g.fillStyle=Theme.ink;txt(g,'BAR '+S.clk.bar,cx,cy+R*.08,R*.18,'center',1,700);txt(g,'BEAT '+S.clk.bib,cx,cy+R*.3,R*.09,'center',.75,500)},read:S=>[['BAR',S.clk.bar+'.'+S.clk.bib],['REV',(240/(+S.bpm||90)).toFixed(2)+'s']]},
+ spectrum:{title:'SPECTRUM',draw(g,r,S){const n=48,cw=r.w/n;g.strokeStyle=Theme.line;g.beginPath();g.moveTo(r.x,r.y+r.h*.85);g.lineTo(r.x+r.w,r.y+r.h*.85);g.stroke();for(let i=0;i<n;i++){const v=(Audio.B[Math.floor(i*64/n)]||0),h=Math.max(1,v*r.h*.72),x=r.x+i*cw;g.fillStyle=i%8===0?Theme.acc:Theme.ink;g.globalAlpha=.35+v*.65;g.fillRect(x+cw*.18,r.y+r.h*.85-h,cw*.58,h);g.fillStyle=Theme.acc;g.globalAlpha=.9;g.fillRect(x+cw*.18,r.y+r.h*.85-h-1,cw*.58,1)}},read:S=>[['LOW',S.sh[0]+'%'],['MID',S.sh[1]+'%'],['HIGH',S.sh[2]+'%']]},
+ waveform:{title:'WAVEFORM',draw(g,r,S){const P=Audio.Pk,n=P?P.p.length:0;if(!P){g.strokeStyle=Theme.line;g.beginPath();g.moveTo(r.x,r.y+r.h/2);g.lineTo(r.x+r.w,r.y+r.h/2);g.stroke();return}const mid=r.y+r.h/2,bw=r.w/n;for(let i=0;i<n;i++){const h=Math.max(1,P.p[i]*r.h*.43);g.fillStyle=i/n<S.prog?Theme.acc:Theme.ink;g.globalAlpha=i/n<S.prog?.9:.55;g.fillRect(r.x+i*bw,mid-h,Math.max(1,bw*.65),h*2)}g.strokeStyle=Theme.acc;g.lineWidth=1.5;g.globalAlpha=1;g.beginPath();g.moveTo(r.x+S.prog*r.w,r.y);g.lineTo(r.x+S.prog*r.w,r.y+r.h);g.stroke()},read:S=>[['DURATION',fmt(S.dur)],['POSITION',Math.round(S.prog*100)+'%']]},
+ timeline:{title:'TIMELINE / ENERGY',draw(g,r,S){const P=Audio.Pk,n=P?P.r.length:0;if(!P)return;const bw=r.w/n;for(let i=0;i<n;i++){const e=P.e[i],x=r.x+i*bw;g.fillStyle=e>.62?Theme.acc:Theme.ink;g.globalAlpha=.2+e*.8;g.fillRect(x,r.y+r.h*(1-e),Math.max(1,bw*.72),r.h*e)}for(let i=0;i<=10;i++){const x=r.x+r.w*i/10;g.strokeStyle=Theme.line;g.globalAlpha=.8;g.beginPath();g.moveTo(x,r.y);g.lineTo(x,r.y+r.h);g.stroke()}g.strokeStyle=Theme.acc;g.lineWidth=1.5;g.beginPath();g.moveTo(r.x+S.prog*r.w,r.y);g.lineTo(r.x+S.prog*r.w,r.y+r.h);g.stroke()},read:S=>[['ELAPSED',fmt(S.t)],['REMAINING','-'+fmt(Math.max(0,S.dur-S.t))]]},
+ spectrogram:{title:'SPECTROGRAM',history:[],lastT:-1,draw(g,r,S){const H=this.history;if(S.playing&&Math.abs(S.t-this.lastT)>.035){H.push(Array.from(Audio.B));if(H.length>110)H.shift();this.lastT=S.t}const cols=H.length;if(!cols)return;const cw=r.w/110,rh=r.h/64;for(let x=0;x<cols;x++)for(let y=0;y<64;y++){const v=H[x][y]||0;g.fillStyle=v>.55?Theme.acc:(v>.2?Theme.ink:Theme.line);g.globalAlpha=.12+v*.88;g.fillRect(r.x+r.w-cols*cw+x*cw,r.y+r.h-(y+1)*rh,cw+1,rh+1)}},reset(){this.history=[];this.lastT=-1},read:S=>[['BINS',64],['HISTORY','LIVE']]},
+ rhythm:{title:'RHYTHM MAP',grid:{},lastStep:-1,lastMix:{low:0,mid:0,high:0},draw(g,r,S){
+   const cols=8,rows=8,legendH=Math.max(10,Math.min(17,r.h*.105)),gridY=r.y+legendH,gridH=Math.max(1,r.h-legendH),cw=r.w/cols,rh=gridH/rows;
+   const step=Math.max(0,Math.floor(S.clk.beat*4));
+   const A=this.A||(this.A={low:0,mid:0,high:0,en:0});
+   if(S.playing){A.low=Math.max(A.low,Audio.bandNorm.low);A.mid=Math.max(A.mid,Audio.bandNorm.mid);A.high=Math.max(A.high,Audio.bandNorm.high);A.en=Math.max(A.en,Audio.energy)}
+   if(S.playing&&step!==this.lastStep){
+    const done=this.lastStep,jump=this.lastStep<0||Math.abs(step-this.lastStep)>1;this.lastStep=step;
+    // Compress each band's level slightly, then use its share of the spectral mix as a color weight.
+    const raw={low:Math.pow(clamp01(A.low),.82),mid:Math.pow(clamp01(A.mid),.82),high:Math.pow(clamp01(A.high),.82)};
+    const total=raw.low+raw.mid+raw.high;
+    const weights=total>1e-5?{low:raw.low/total,mid:raw.mid/total,high:raw.high/total}:{low:0,mid:0,high:0};
+    // Overall energy controls whether a cell is a faint tick or a strong mark.
+    const strength=clamp01(Math.pow(clamp01(A.en),.78)*1.12);
+    if(!jump)this.grid[done%64]={step:done,weights,strength,color:blendRhythmColors(weights),dominant:weights.low>=weights.mid&&weights.low>=weights.high?'low':weights.mid>=weights.high?'mid':'high',time:S.t};
+    if(!jump)this.lastMix=weights;A.low=A.mid=A.high=A.en=0;
+   }
+   // Compact legend explains the three sources without competing with the 8×8 grid.
+   const font=Math.max(6,Math.min(8.5,r.w*.034));g.font='600 '+font+'px '+Theme.font;g.textAlign='left';
+   const legend=[['LOW',RhythmColors.low],['MID',RhythmColors.mid],['HIGH',RhythmColors.high]],unit=r.w/3;
+   legend.forEach((it,i)=>{const x=r.x+i*unit+1;g.globalAlpha=.95;g.fillStyle=it[1];g.fillRect(x,r.y+1,font*.78,font*.78);g.fillStyle=Theme.ink;g.globalAlpha=.85;g.fillText(it[0],x+font*1.1,r.y+font*.83)});
+   for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){
+    const st=col+row*cols,hit=this.grid[st],x=r.x+col*cw,y=gridY+row*rh;
+    g.strokeStyle=Theme.line;g.globalAlpha=.95;g.lineWidth=.7;g.strokeRect(x+1,y+1,Math.max(0,cw-2),Math.max(0,rh-2));
+    if(hit&&hit.strength>.045){
+     // Keep a visible margin around every cell: amplitude changes size and opacity, not just color.
+     const scale=.20+.64*Math.pow(hit.strength,.66),w=cw*scale,h=rh*scale,sx=x+(cw-w)/2,sy=y+(rh-h)/2;
+     g.fillStyle=hit.color;g.globalAlpha=.14+.78*Math.pow(hit.strength,.72);g.fillRect(sx,sy,w,h);
+     // A narrow dominant-band stripe makes a bass-, mid-, or high-led hit readable at a glance.
+     g.fillStyle=RhythmColors[hit.dominant];g.globalAlpha=.88;g.fillRect(sx,sy,Math.max(1,cw*.065),h);
+     // Quiet hits get a tiny centered core; stronger hits get a slightly larger one.
+     const core=Math.max(1,Math.min(w,h)*(.12+.12*hit.strength));g.fillStyle=RhythmColors[hit.dominant];g.globalAlpha=.7;g.fillRect(x+cw/2-core/2,y+rh/2-core/2,core,core);
+    }
+   }
+   const cur=step%64,x=r.x+(cur%cols)*cw,y=gridY+Math.floor(cur/cols)*rh;g.strokeStyle=Theme.acc;g.globalAlpha=1;g.lineWidth=1.5;g.strokeRect(x+1,y+1,Math.max(0,cw-2),Math.max(0,rh-2));
+  },reset(){this.grid={};this.lastStep=-1;this.A=null;this.lastMix={low:0,mid:0,high:0}},read(S){return [['LOW',Math.round((this.lastMix.low||0)*100)+'%'],['MID',Math.round((this.lastMix.mid||0)*100)+'%'],['HIGH',Math.round((this.lastMix.high||0)*100)+'%']] }},
+ fingerprint:{title:'ENERGY FINGERPRINT',draw(g,r,S){const P=Audio.Pk;if(!P)return;const cx=r.x+r.w/2,cy=r.y+r.h/2,R=Math.max(2,Math.min(r.w,r.h)*.39),inner=R*.36,n=Math.min(144,P.r.length);g.strokeStyle=Theme.line;g.lineWidth=1;for(let k=1;k<=3;k++){g.beginPath();g.arc(cx,cy,R*k/3,0,Math.PI*2);g.stroke()}for(let i=0;i<n;i++){const ix=Math.floor(i*P.r.length/n),e=P.e[ix]||0,ang=i/n*Math.PI*2-Math.PI/2,outer=inner+(R-inner)*e;g.strokeStyle=e>.68?Theme.acc:Theme.ink;g.globalAlpha=.28+e*.72;g.lineWidth=Math.max(.7,R*.008);g.beginPath();g.moveTo(cx+Math.cos(ang)*inner,cy+Math.sin(ang)*inner);g.lineTo(cx+Math.cos(ang)*outer,cy+Math.sin(ang)*outer);g.stroke()}g.strokeStyle=Theme.lime;g.globalAlpha=.95;g.lineWidth=1.2;g.beginPath();for(let i=0;i<n;i++){const ix=Math.floor(i*P.p.length/n),v=P.p[ix]||0,ang=i/n*Math.PI*2-Math.PI/2,rr=R*(.48+.38*v),x=cx+Math.cos(ang)*rr,y=cy+Math.sin(ang)*rr;i?g.lineTo(x,y):g.moveTo(x,y)}g.closePath();g.stroke();g.fillStyle=Theme.acc;g.globalAlpha=1;g.beginPath();g.arc(cx,cy,Math.max(1,R*.035),0,Math.PI*2);g.fill()},read:S=>[['PEAK',dB(Audio.tp)+' dBFS'],['RMS',dB(Audio.rms)+' dBFS']]},
+ particles:{title:'PARTICLE FIELD',P:[],reset(){this.P=[]},draw(g,r,S){const P=this.P,cx=r.x+r.w/2,cy=r.y+r.h/2,R=Math.min(r.w,r.h)*.34,intensity=+S.motion;const count=Math.floor((Audio.pulse*45+Audio.energy*12)*intensity);for(let i=0;i<count&&P.length<700;i++){const a=Math.random()*Math.PI*2,sp=(.5+Math.random()*2.5)*intensity;P.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,size:.5+Math.random()*2})}g.fillStyle=Theme.acc;for(let i=P.length-1;i>=0;i--){const p=P[i];p.x+=p.vx;p.y+=p.vy;p.life-=.012*intensity;if(p.life<=0||p.x<r.x||p.x>r.x+r.w||p.y<r.y||p.y>r.y+r.h){P.splice(i,1);continue}g.globalAlpha=p.life;g.beginPath();g.arc(p.x,p.y,p.size*(.5+Audio.energy),0,Math.PI*2);g.fill()}g.strokeStyle=Theme.line;g.globalAlpha=.6;g.beginPath();g.arc(cx,cy,R,0,Math.PI*2);g.stroke()},read:S=>[['ENERGY',Math.round(Audio.energy*100)+'%'],['MOTION',S.motionName||'EXTREME']]},
+ stereo:{title:'STEREO FIELD',draw(g,r,S){const cx=r.x+r.w/2,cy=r.y+r.h/2,R=Math.max(0,Math.min(r.w*.42,r.h*.4));g.strokeStyle=Theme.line;g.lineWidth=1;g.beginPath();g.moveTo(cx-R,cy);g.lineTo(cx+R,cy);g.moveTo(cx,cy-R);g.lineTo(cx,cy+R);g.arc(cx,cy,R,0,Math.PI*2);g.stroke();const spread=Audio.stereo,phase=Audio.phase;g.fillStyle=phase<-.1?'#e45d56':Theme.acc;g.globalAlpha=.8;g.beginPath();g.ellipse(cx,cy,R*(.18+spread*.8),R*(.12+Math.abs(phase)*.45),phase*.5,0,Math.PI*2);g.fill();g.fillStyle=Theme.ink;txt(g,phase<-.1?'PHASE CHECK':'L / R',cx,cy+R+S.W*.018,S.W*.018,'center',.8,600)},read:S=>[['WIDTH',Math.round(Audio.stereo*100)+'%'],['CORR',Audio.phase.toFixed(2)]]}
+};
+
+/* ---- LAYOUTS ---- */
+const Layouts={
+ 'Lab / Portrait':[
+  {m:'header',x:0,y:0,w:1,h:.045},
+  {m:'orbit',x:0,y:.045,w:.5,h:.24},{m:'spectrum',x:.5,y:.045,w:.5,h:.24},
+  {m:'waveform',x:0,y:.285,w:1,h:.065},
+  {m:'rhythm',x:0,y:.35,w:.5,h:.24},{m:'stereo',x:.5,y:.35,w:.5,h:.24},
+  {m:'spectrogram',x:0,y:.59,w:1,h:.065},
+  {m:'fingerprint',x:0,y:.655,w:.5,h:.24},{m:'particles',x:.5,y:.655,w:.5,h:.24},
+  {m:'timeline',x:0,y:.895,w:1,h:.065},
+  {m:'footer',x:0,y:.96,w:1,h:.04}
+ ],
+ 'Lab / Portrait — Hero':[
+  {m:'header',x:0,y:0,w:1,h:.05},
+  {m:'orbit',x:0,y:.05,w:.5,h:.24},{m:'spectrum',x:.5,y:.05,w:.5,h:.24},
+  {m:'waveform',x:0,y:.29,w:1,h:.065},
+  {m:'spectrogram',x:0,y:.355,w:1,h:.07},
+  {m:'rhythm',x:0,y:.425,w:.5,h:.23},{m:'particles',x:.5,y:.425,w:.5,h:.23},
+  {m:'timeline',x:0,y:.655,w:1,h:.07},
+  {m:'fingerprint',x:0,y:.725,w:.5,h:.235},{m:'stereo',x:.5,y:.725,w:.5,h:.235},
+  {m:'footer',x:0,y:.96,w:1,h:.04}
+ ],
+ 'Lab / Landscape':[
+  {m:'header',x:0,y:0,w:1,h:.08},{m:'orbit',x:0,y:.08,w:.34,h:.42},
+  {m:'spectrum',x:.34,y:.08,w:.33,h:.21},{m:'stereo',x:.67,y:.08,w:.33,h:.21},
+  {m:'waveform',x:.34,y:.29,w:.66,h:.21},{m:'spectrogram',x:0,y:.5,w:.5,h:.25},
+  {m:'rhythm',x:.5,y:.5,w:.5,h:.25},{m:'fingerprint',x:0,y:.75,w:1,h:.18},{m:'footer',x:0,y:.95,w:1,h:.05}
+ ]
+};
+
+/* ---- ENGINE ---- */
+const a=$('a'),cv=$('c'),g=cv.getContext('2d'),S={},sel=$('layout'),sk=$('seek');
+// Keep the glossy tempo slider and manual BPM field synchronized.
+const bpmField=$('bpm'),bpmSlider=$('bpmSlider'),bpmDisplay=$('bpmDisplay');
+function updateBpmUI(fromSlider=false){
+ if(fromSlider)bpmField.value=bpmSlider.value;
+ const value=Number(bpmField.value);
+ if(Number.isFinite(value)&&value>0){
+  bpmDisplay.textContent=(+value.toFixed(2))+' BPM';
+  const lo=Number(bpmSlider.min),hi=Number(bpmSlider.max);
+  bpmSlider.value=String(Math.max(lo,Math.min(hi,value)));
+ }
+}
+bpmSlider.addEventListener('input',()=>updateBpmUI(true));
+bpmField.addEventListener('input',()=>updateBpmUI(false));
+bpmField.addEventListener('change',()=>{
+ let value=Number(bpmField.value);
+ if(!Number.isFinite(value)||value<=0)value=92;
+ value=Math.round(Math.max(1,Math.min(400,value))*100)/100;
+ bpmField.value=String(value);updateBpmUI(false);
+});
+updateBpmUI(false);
+
+// Piano-inspired 12-note picker: natural notes sit low, accidentals sit high.
+const keyField=$('key'),keyDisplay=$('keyDisplay'),pianoPicker=$('pianoPicker');
+const pitchNames=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const pitchClasses={C:0,'B#':0,'C#':1,DB:1,D:2,'D#':3,EB:3,E:4,FB:4,'E#':5,F:5,'F#':6,GB:6,G:7,'G#':8,AB:8,A:9,'A#':10,BB:10,B:11,CB:11};
+let selectedPitch=2,selectedMode='MIN';
+function paintKeyUI(){
+ const root=pitchNames[selectedPitch];
+ pianoPicker.querySelectorAll('[data-note]').forEach(button=>{
+  const active=button.dataset.note===root;
+  button.classList.toggle('selected',active);button.setAttribute('aria-pressed',String(active));
+ });
+ document.querySelectorAll('.mode-btn').forEach(button=>{
+  const active=button.dataset.mode===selectedMode;
+  button.setAttribute('aria-pressed',String(active));
+ });
+ keyDisplay.textContent=(keyField.value||root+' '+selectedMode).toUpperCase();
+}
+function setKey(pitch,mode,writeField=true){
+ selectedPitch=((pitch%12)+12)%12;selectedMode=mode;
+ if(writeField)keyField.value=pitchNames[selectedPitch]+' '+selectedMode;
+ paintKeyUI();
+}
+pianoPicker.querySelectorAll('[data-note]').forEach(button=>button.addEventListener('click',()=>{
+ const pitch=pitchNames.indexOf(button.dataset.note);if(pitch>=0)setKey(pitch,selectedMode,true);
+}));
+document.querySelectorAll('.mode-btn').forEach(button=>button.addEventListener('click',()=>setKey(selectedPitch,button.dataset.mode,true)));
+function parseManualKey(){
+ const value=keyField.value.trim().toUpperCase().replace(/♯/g,'#').replace(/♭/g,'B');
+ const match=value.match(/^([A-G])\s*([#B]?)(?:\s*(MAJ(?:OR)?|MIN(?:OR)?))?$/);
+ if(match){
+  const root=match[1]+match[2],pitch=pitchClasses[root];
+  if(pitch!==undefined){
+   if(match[3])selectedMode=match[3].startsWith('MAJ')?'MAJ':'MIN';
+   selectedPitch=pitch;paintKeyUI();return;
+  }
+ }
+ keyDisplay.textContent=(keyField.value||'').toUpperCase();
+}
+keyField.addEventListener('input',parseManualKey);
+parseManualKey();
+Object.keys(Layouts).forEach(k=>sel.add(new Option(k,k)));sel.value='Lab / Portrait';
+function panel(g,r,S,idx,m){
+ const W=S.W,fs=Math.max(6.5,Math.min(W*.023,r.h*.14)),pad=Math.max(2,Math.min(W*.018,r.h*.11));
+ const rd=m.read?m.read(S):[],compact=r.h<76,showStats=rd.length>0&&!compact;
+ g.strokeStyle=Theme.ink;g.globalAlpha=.25;g.lineWidth=1;g.strokeRect(r.x+.5,r.y+.5,Math.max(0,r.w-1),Math.max(0,r.h-1));
+ g.fillStyle=Theme.acc;txt(g,String(idx).padStart(2,'0'),r.x+pad,r.y+pad+fs*.9,fs,'left',1,700);
+ g.fillStyle=Theme.ink;txt(g,m.title,r.x+pad+fs*2.4,r.y+pad+fs*.9,fs,'left',.9,700);
+ if(showStats){
+   rd.forEach((q,i)=>{const x=r.x+pad+i*(r.w-pad*2)/rd.length,y=r.y+r.h-pad;g.fillStyle=Theme.ink;
+    txt(g,q[0],x,y-fs*1.2,fs*.62,'left',.6,500);txt(g,String(q[1]),x,y,fs*.95,'left',.95,600)});
+ }
+ // Compact panels omit readouts and reserve a safe drawable area for the module.
+ const qx=r.x+pad,qy=r.y+pad+fs*1.45,qw=Math.max(0,r.w-pad*2);
+ const bottom=showStats?r.y+r.h-pad-fs*2.0:r.y+r.h-pad*.45;
+ const q={x:qx,y:qy,w:qw,h:Math.max(0,bottom-qy)};
+ if(q.w<=0||q.h<=0)return;
+ g.save();g.beginPath();g.rect(q.x,q.y,q.w,q.h);g.clip();m.draw(g,q,S);g.restore()
+}
+$('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;a.src=URL.createObjectURL(f);a.load();Audio.init(a);
+ Object.values(Modules).forEach(m=>m.reset&&m.reset());await Audio.decode(f)};
+$('play').onclick=()=>{Audio.init(a);if(Audio.ac&&Audio.ac.state==='suspended')Audio.ac.resume();a.paused?a.play():a.pause()};
+a.onplay=()=>{Audio.init(a);Audio.ac&&Audio.ac.resume()};
+$('full').onclick=()=>{const f=$('fs');document.fullscreenElement?document.exitFullscreen():f.requestFullscreen&&f.requestFullscreen()};
+let drag=false;sk.onpointerdown=()=>drag=true;sk.onpointerup=()=>drag=false;
+sk.oninput=()=>{if(a.duration)a.currentTime=sk.value/1000*a.duration};
+
+/* ---- VIDEO EXPORT ----
+   Capture the canvas at a fixed 1080×1920 portrait or 1920×1080 landscape
+   resolution and combine it with the audio output from the existing Web Audio graph. */
+let exportRecorder=null,exportVideoStream=null,exportChunks=[],discardExport=false;
+const exportBtn=$('export'),stopExportBtn=$('stopExport'),exportStatus=$('exportStatus');
+function exportMessage(message){exportStatus.textContent=message}
+function safeFilename(value){return (value||'syntezia-data').trim().replace(/[^a-z0-9-_]+/gi,'_').replace(/^_+|_+$/g,'').slice(0,80)||'syntezia-data'}
+function supportedRecordingType(){
+ if(!window.MediaRecorder)return '';
+ const candidates=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+ return candidates.find(type=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(type))||'';
+}
+async function startExport(){
+ if(!a.src){exportMessage('Load an audio track before exporting.');return}
+ if(!Number.isFinite(a.duration)||a.duration<=0){exportMessage('The track is still loading. Try again when its duration appears.');return}
+ if(!cv.captureStream||!window.MediaRecorder){exportMessage('This browser does not support direct video export. Try a current version of Chrome, Edge, or Safari.');return}
+ if(exportRecorder&&exportRecorder.state==='recording'){exportMessage('An export is already running.');return}
+ try{
+  Audio.init(a);
+  if(!Audio.ac||!Audio.recordDest)throw new Error('Audio recording output could not be initialized.');
+  // Invoke play() before yielding to an await, so browsers still recognize the button gesture.
+  const resumePromise=Audio.ac.state==='suspended'?Audio.ac.resume():Promise.resolve();
+  a.pause();
+  try{a.currentTime=0}catch(_){}
+  Object.values(Modules).forEach(m=>m.reset&&m.reset());
+  const fps=Math.max(1,Math.min(60,Number($('fps').value)||30));
+  const landscape=sel.value==='Lab / Landscape';
+  // Set predictable dimensions immediately; the render loop redraws into this canvas size.
+  cv.width=landscape?1920:1080;cv.height=landscape?1080:1920;
+  exportVideoStream=cv.captureStream(fps);
+  const videoTracks=exportVideoStream.getVideoTracks();
+  const audioTrack=Audio.recordDest.stream.getAudioTracks()[0];
+  if(!videoTracks.length||!audioTrack)throw new Error('Could not create both video and audio recording tracks.');
+  const stream=new MediaStream([...videoTracks,audioTrack]);
+  const mime=supportedRecordingType();
+  const config={videoBitsPerSecond:fps===60?20000000:12000000,audioBitsPerSecond:192000};
+  if(mime)config.mimeType=mime;
+  exportChunks=[];discardExport=false;
+  exportRecorder=new MediaRecorder(stream,config);
+  exportRecorder.ondataavailable=event=>{if(event.data&&event.data.size)exportChunks.push(event.data)};
+  exportRecorder.onerror=event=>{
+   discardExport=true;
+   console.error('Syntezia export error:',event.error||event);
+   exportMessage('Export failed. Try 30 fps or a different browser.');
+  };
+  exportRecorder.onstop=()=>{
+   if(!discardExport){
+    const actualType=exportRecorder.mimeType||exportChunks[0]?.type||mime||'video/webm';
+    const blob=new Blob(exportChunks,{type:actualType});
+    if(!blob.size){exportMessage('No video data was captured. Please try exporting again.');}
+    else{
+     const extension=actualType.includes('mp4')?'mp4':'webm';
+     const url=URL.createObjectURL(blob),link=document.createElement('a');
+     link.href=url;link.download=safeFilename($('title').value)+'_syntezia.'+extension;
+     document.body.appendChild(link);link.click();link.remove();
+     setTimeout(()=>URL.revokeObjectURL(url),60000);
+     exportMessage('Export downloaded · '+(landscape?'1920 × 1080':'1080 × 1920')+' · '+fps+' fps · '+extension.toUpperCase());
+    }
+   }
+   if(exportVideoStream)exportVideoStream.getTracks().forEach(track=>track.stop());
+   exportVideoStream=null;exportRecorder=null;exportChunks=[];
+   exportBtn.disabled=false;stopExportBtn.disabled=true;sel.disabled=false;$('fps').disabled=false;
+  };
+  // Start playback from the top, and capture its analyzer output as the audio track.
+  const playbackPromise=a.play();
+  exportRecorder.start(1000);
+  exportBtn.disabled=true;stopExportBtn.disabled=false;sel.disabled=true;$('fps').disabled=true;
+  exportMessage('Recording '+(landscape?'1920 × 1080':'1080 × 1920')+' at '+fps+' fps. The video downloads automatically when the track ends.');
+  await Promise.all([resumePromise,playbackPromise]);
+ }catch(err){
+  console.error('Syntezia export could not start:',err);
+  discardExport=true;
+  if(exportRecorder&&exportRecorder.state==='recording')exportRecorder.stop();
+  else{
+   if(exportVideoStream)exportVideoStream.getTracks().forEach(track=>track.stop());
+   exportVideoStream=null;exportRecorder=null;exportChunks=[];
+   exportBtn.disabled=false;stopExportBtn.disabled=true;sel.disabled=false;$('fps').disabled=false;
+  }
+  exportMessage('Could not start export: '+(err&&err.message?err.message:'browser recording error'));
+ }
+}
+function stopExport(){
+ if(exportRecorder&&exportRecorder.state==='recording'){
+  exportMessage('Finishing video and preparing download…');
+  a.pause();exportRecorder.stop();
+ }
+}
+exportBtn.addEventListener('click',startExport);
+stopExportBtn.addEventListener('click',stopExport);
+a.addEventListener('ended',()=>{if(exportRecorder&&exportRecorder.state==='recording')exportRecorder.stop()});
+/* ---- INTRO ORB: unique, built from the track. Seed = hash of the file's bytes (same file = same orb).
+   Shape = the song's loudness contour spiralled around a sphere, then fed live by the audio. ---- */
+function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const Orb={id:-1,pts:[],rings:[],turns:3,tilt:.3,rot0:0,hue:0,
+ build(seed){const rnd=mulberry(seed),P=Audio.Pk,L=P?P.e.length:0,N=1100,ga=Math.PI*(3-Math.sqrt(5));
+  this.turns=2+Math.floor(rnd()*5);this.tilt=.15+rnd()*.5;this.rot0=rnd()*6.283;this.hue=Math.floor(rnd()*360);this.pts=[];
+  for(let i=0;i<N;i++){const y=1-2*(i+.5)/N,rr=Math.sqrt(1-y*y),th=i*ga,lon=(((th/(Math.PI*2))%1)+1)%1,u=(lon+(y*.5+.5)*this.turns)%1,amp=L?P.e[Math.min(L-1,Math.floor(u*L))]:rnd();
+   this.pts.push({x:Math.cos(th)*rr,y,z:Math.sin(th)*rr,r:.78+amp*.55,amp,band:Math.min(63,Math.floor((1-Math.abs(y))*63))})}
+  this.rings=[];const nr=1+Math.floor(rnd()*3);
+  for(let k=0;k<nr;k++)this.rings.push({rad:1.5+rnd()*.25,n:70+Math.floor(rnd()*50),tx:(rnd()-.5)*1.6,tz:rnd()*3.14,sp:(rnd()<.5?-1:1)*(.15+rnd()*.35),hue:(this.hue+k*(40+rnd()*80))%360})},
+ draw(g,W,H,S,al,sc){const seed=Audio.seed;if(this.id!==seed){this.build(seed);this.id=seed}
+  const cx=W/2,cy=H*.4,R=W*.17*sc,t=S.t,ry=this.rot0+t*.5,cY=Math.cos(ry),sY=Math.sin(ry),cT=Math.cos(this.tilt),sT=Math.sin(this.tilt),mot=S.motion;
+  const br=1+Audio.pulse*.07+Audio.level*.3*mot,P=(x,y,z)=>{const x1=x*cY+z*sY,z1=-x*sY+z*cY,y2=y*cT-z1*sT,z2=y*sT+z1*cT,s=1/(1-z2*.15);return[cx+x1*R*s,cy+y2*R*s,s,z2]};
+  for(const p of this.pts){const m=p.r*br*(1+Audio.B[p.band]*.3*mot),q=P(p.x*m,p.y*m,p.z*m);
+   g.fillStyle=p.amp>.82?Theme.lime:Theme.acc;g.globalAlpha=al*(.18+.82*clamp01((q[3]+1.5)/3));
+   g.beginPath();g.arc(q[0],q[1],R*.016*q[2]*(.5+p.amp*.7),0,7);g.fill()}
+  for(const rg of this.rings){g.fillStyle='hsl('+rg.hue+',85%,62%)';const ctz=Math.cos(rg.tz),stz=Math.sin(rg.tz),ctx=Math.cos(rg.tx),stx=Math.sin(rg.tx);
+   for(let i=0;i<rg.n;i++){const ph=i/rg.n*6.283+t*rg.sp,x0=Math.cos(ph)*rg.rad*br,z0=Math.sin(ph)*rg.rad*br,y1=-z0*stx,z1=z0*ctx,q=P(x0*ctz-y1*stz,x0*stz+y1*ctz,z1);
+    g.globalAlpha=al*(.15+.65*clamp01((q[3]+1.8)/3.6));g.beginPath();g.arc(q[0],q[1],R*.011*q[2],0,7);g.fill()}}
+  const hex=('00000000'+seed.toString(16)).slice(-8).toUpperCase(),ty=cy+R*2.15;g.fillStyle=Theme.ink;
+  txt(g,'ORB '+hex,W/2,ty,W*.034,'center',al*.9,700);txt(g,S.title.toUpperCase().slice(0,24),W/2,ty+W*.05,W*.026,'center',al*.7,500);txt(g,S.bpm+' BPM  /  '+S.key.toUpperCase(),W/2,ty+W*.09,W*.022,'center',al*.6,500)}};
+function introOrb(g,W,H,S){const L=+$('intro').value;if(!(L>0)||!a.src||!Audio.seed||S.t>=L)return;
+ const p=S.t/L,fade=p>.82?Math.max(0,1-(p-.82)/.18):1,e=1-Math.pow(1-Math.min(1,S.t/.6),3);
+ g.save();g.globalAlpha=.95*fade;g.fillStyle=Theme.bg;g.fillRect(0,0,W,H);
+ Orb.draw(g,W,H,S,fade,(.55+.45*e)*(.85+.15*fade));g.restore()}
+function frame(){
+ const ratio=sel.value==='Lab / Landscape'?16/9:9/16;const stage=$('stage');stage.style.aspectRatio=String(ratio);stage.style.width=ratio>1?'100%':'min(100%, calc(var(--h) * .5625))';
+ const r=cv.getBoundingClientRect();
+ // Draw to a fixed export canvas so the saved video has predictable dimensions
+ // regardless of the size of the browser window or display pixel ratio.
+ const outW=ratio>1?1920:1080,outH=ratio>1?1080:1920;
+ if(cv.width!==outW||cv.height!==outH){cv.width=outW;cv.height=outH}
+ const sx=outW/Math.max(1,r.width),sy=outH/Math.max(1,r.height);
+ g.setTransform(sx,0,0,sy,0,0);g.globalAlpha=1;g.fillStyle=Theme.bg;g.fillRect(0,0,r.width,r.height);
+ const W=r.width,H=r.height,playing=!a.paused&&!a.ended;Audio.update(playing);Theme.acc=$('acc').value;S.motion=+$('motion').value||1;S.motionName=S.motion>0.8?'EXTREME':S.motion>0.5?'BALANCED':'SUBTLE';Theme.bg='#e4e8e6';
+ const t=a.currentTime||0,bpm=+$('bpm').value||90,off=+$('offset').value||0,beat=Math.max(0,(t-off)*bpm/60),tot=Audio.low+Audio.mid+Audio.high+1e-6;
+ Object.assign(S,{W,H,t,dur:a.duration||0,playing,title:$('title').value,bpm:$('bpm').value,key:$('key').value,
+  clk:{beat,bar:Math.floor(beat/4)+1,bib:Math.floor(beat%4)+1,st:Math.floor(beat*4)},
+  sh:[Audio.low,Audio.mid,Audio.high].map(v=>Math.round(v/tot*100))});
+ S.prog=S.dur?t/S.dur:0;if(!drag&&S.dur)sk.value=S.prog*1000;
+ let n=0;(Layouts[sel.value]||[]).forEach(it=>{const m=Modules[it.m];if(!m)return;const rc={x:it.x*W,y:it.y*H,w:it.w*W,h:it.h*H};
+  g.save();try{if(m.bare)m.draw(g,rc,S);else panel(g,rc,S,++n,m)}catch(err){
+    // A bad module frame must not stop the entire animation loop.
+    console.error('Syntezia module render error ('+it.m+'):',err);
+    g.globalAlpha=1;g.strokeStyle='#d94b65';g.strokeRect(rc.x+2,rc.y+2,Math.max(0,rc.w-4),Math.max(0,rc.h-4));
+  }finally{g.restore()}});
+ introOrb(g,W,H,S);
+ if(!a.src){g.fillStyle=Theme.acc;txt(g,'LOAD A TRACK',W/2,H*.5,W*.05,'center',.8,700);txt(g,'AUDIO DATA / READY',W/2,H*.5+W*.07,W*.022,'center',.65,500)}
+ requestAnimationFrame(frame)}
+frame();
+</script>
+</body>
+</html>
